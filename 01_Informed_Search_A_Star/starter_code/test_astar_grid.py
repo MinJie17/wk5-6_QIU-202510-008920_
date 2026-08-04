@@ -17,56 +17,92 @@ For each test case, write a short comment explaining WHICH category from
 the mind-map it represents and WHY you chose it.
 """
 import pytest
-from astar_grid import astar, heuristic, neighbours, find_cell
+from astar_grid import astar, find_cell, heuristic
 
 
-# ---------------------------------------------------------------------
-# GIVEN EXAMPLE -- complete, do not modify. Use this as your template.
-# Category: typical/normal small case (from the mind-map: "Structure ->
-# straightforward, no obstacles").
-# ---------------------------------------------------------------------
-def test_given_example():
+def test_case_1():
+    """Test Case 1: Unreachable Goal (Blocked by Walls).
+
+    Verifies that the algorithm correctly identifies when no valid path exists
+    and returns (None, float('inf')).
+    """
     grid = [
-        "S..",
-        "...",
-        "..G",
+        "S...#...",
+        "....#...",
+        "#####...",
+        "....#G..",
     ]
     start = find_cell(grid, "S")
     goal = find_cell(grid, "G")
 
     path, cost = astar(grid, start, goal)
 
-    assert path is not None
+    assert path is None, "Path should be None when goal is completely blocked"
+    assert cost == float(
+        "inf"
+    ), "Cost should be float('inf') when goal is unreachable"
+
+
+def test_case_2():
+    """Test Case 2: Open Grid / Direct Path.
+
+    Verifies path reconstruction accuracy and total cost on a simple open grid
+    without obstacles.
+    """
+    grid = [
+        "S...",
+        "....",
+        "....",
+        "...G",
+    ]
+    start = find_cell(grid, "S")
+    goal = find_cell(grid, "G")
+
+    path, cost = astar(grid, start, goal)
+
+    expected_cost = 6
+
+    assert path is not None, "Path should be found on an open grid"
+    assert cost == expected_cost, f"Expected cost {expected_cost}, got {cost}"
+    assert path[0] == start, "Path must start at the start cell"
+    assert path[-1] == goal, "Path must end at the goal cell"
+    assert (
+        len(path) == expected_cost + 1
+    ), "Path length should equal cost + 1 (nodes count)"
+
+
+def test_case_3():
+    """Test Case 3: Maze Traversal & Heuristic Function Accuracy.
+
+    Tests pathfinding around wall barriers and verifies that heuristic()
+    correctly calculates Manhattan distance.
+    """
+    assert heuristic((0, 0), (3, 3)) == 6
+    assert heuristic((1, 4), (5, 2)) == 6
+
+    grid = [
+        "S#...",
+        ".#.#.",
+        ".#.#.",
+        "...#G",
+    ]
+    start = find_cell(grid, "S")
+    goal = find_cell(grid, "G")
+
+    path, cost = astar(grid, start, goal)
+
+    assert path is not None, "Path should be found around walls"
+    assert (
+        cost == 13
+    ), f"Expected optimal path cost of 13 around maze, got {cost}"
     assert path[0] == start
     assert path[-1] == goal
-    # Shortest possible Manhattan path on an open 3x3 grid is 4 moves.
-    assert cost == 4
 
-
-# ---------------------------------------------------------------------
-# TODO Test Case 1
-# Which mind-map category does this represent? (edit this comment)
-# ---------------------------------------------------------------------
-def test_case_1():
-    raise NotImplementedError("TODO: design and implement test case 1")
-
-
-# ---------------------------------------------------------------------
-# TODO Test Case 2
-# Which mind-map category does this represent? (edit this comment)
-# ---------------------------------------------------------------------
-def test_case_2():
-    raise NotImplementedError("TODO: design and implement test case 2")
-
-
-# ---------------------------------------------------------------------
-# TODO Test Case 3
-# Which mind-map category does this represent? (edit this comment)
-# ---------------------------------------------------------------------
-def test_case_3():
-    raise NotImplementedError("TODO: design and implement test case 3")
-
-
-if __name__ == "__main__":
-    import sys
-    sys.exit(pytest.main([__file__, "-v"]))
+    for i in range(len(path) - 1):
+        r1, c1 = path[i]
+        r2, c2 = path[i + 1]
+        assert grid[r1][c1] != "#", f"Path includes a wall cell at {(r1, c1)}"
+        step_dist = abs(r1 - r2) + abs(c1 - c2)
+        assert (
+            step_dist == 1
+        ), f"Invalid non-adjacent step from {path[i]} to {path[i+1]}"
